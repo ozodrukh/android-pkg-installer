@@ -11,7 +11,25 @@ dependencies {
     compile "org.jsoup:jsoup:1.10.3"
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.ozodrukh.android.pkg.installer.AppKt'
+    }
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
 buildscript {
-    ext.kotlin_version = '1.1.3'
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    ext.kotlin_version = '1.1.3-2'
+
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+repositories {
+    mavenCentral()
 }

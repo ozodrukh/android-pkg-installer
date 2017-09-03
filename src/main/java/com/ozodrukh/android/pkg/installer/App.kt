@@ -55,11 +55,11 @@ fun main(args: Array<String>) {
         when (args[0]) {
             "search" -> pkgManager.search(args[1]).subscribeBy(onSuccess = displayPackages)
             "list" -> pkgManager.listPackages().subscribeBy(onSuccess = displayPackages)
-            "download" -> {
+            "install" -> {
                 if (args.size < 2) {
                     Timber.e("android-pkg-installer", null, "(#)package_index\n" +
-                            "root=.\t\t-- sources root folder\n" +
-                            "tag=latest\t\t-- Tag name")
+                            "root=.    \t\t-- sources root folder\n" +
+                            "tag=master\t\t-- Tag name")
                     System.exit(0)
                 }
 
@@ -73,14 +73,22 @@ fun main(args: Array<String>) {
                     emptyMap()
                 }
 
+                var path = options["root"] ?: ".";
+
+                if (path.startsWith("~")) {
+                    path = System.getProperty("user.home") + path.substring(1)
+                }
 
                 pkgManager.findPackageDownloadLink(packageIndex = index, tagName = options["tag"] ?: "master")
                         .flatMap { file -> file.download().map { file } }
-                        .flatMap { file -> file.extractArchive(options["root"] ?: ".") }
+                        .flatMap { file -> file.extractArchive(path) }
                         .subscribeBy(onSuccess = {
                             Timber.i("android-pkg-installer", "Download process completed($it)")
                         })
             }
+            "help" -> println("search - type package name to search index number\n" +
+                    "list - lists all available packages\n" +
+                    "install - (#)package_index root=. tag=master downloads & installs package")
             else -> println("type [help] for documentation")
         }
     }
@@ -228,7 +236,10 @@ data class AndroidSourcePackage(
                     outputDir.mkdirs()
                 }
 
+                Timber.d("android-pkg-installer", "Extracting at $outputDir")
+
                 ProcessBuilder().command("tar", "-xvzf", path, "-C", outputDir.path)
+                        .inheritIO()
                         .start()
                         .waitFor()
             }
